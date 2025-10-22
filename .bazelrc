@@ -1,0 +1,21 @@
+# Bazel configuration for Wayframe
+
+# Build settings
+build --enable_platform_specific_config
+build --incompatible_strict_action_env
+
+# Go specific settings
+build --@io_bazel_rules_go//go/config:race
+
+# Test settings
+test --test_output=errors
+test --test_summary=detailed
+
+# Performance settings
+build --jobs=auto
+build --local_ram_resources=HOST_RAM*.5
+build --local_cpu_resources=HOST_CPUS*.5
+
+# Output settings
+build --color=yes
+build --show_progress_rate_limit=0.5
