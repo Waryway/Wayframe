@@ -2,14 +2,15 @@ package logger
 
 import (
 	"bytes"
+	"log/slog"
 	"strings"
 	"testing"
 )
 
 func TestLoggerLevels(t *testing.T) {
 	buf := &bytes.Buffer{}
-	log := New(InfoLevel)
-	log.SetOutput(buf)
+	handler := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelInfo})
+	log := NewWithHandler(handler)
 	
 	// Debug should not be logged at InfoLevel
 	log.Debug("debug message")
@@ -23,7 +24,7 @@ func TestLoggerLevels(t *testing.T) {
 	if !strings.Contains(buf.String(), "info message") {
 		t.Error("Info message should be logged")
 	}
-	if !strings.Contains(buf.String(), "[INFO]") {
+	if !strings.Contains(buf.String(), "INFO") {
 		t.Error("Log should contain INFO level")
 	}
 	
@@ -33,7 +34,7 @@ func TestLoggerLevels(t *testing.T) {
 	if !strings.Contains(buf.String(), "warn message") {
 		t.Error("Warn message should be logged")
 	}
-	if !strings.Contains(buf.String(), "[WARN]") {
+	if !strings.Contains(buf.String(), "WARN") {
 		t.Error("Log should contain WARN level")
 	}
 	
@@ -43,29 +44,29 @@ func TestLoggerLevels(t *testing.T) {
 	if !strings.Contains(buf.String(), "error message") {
 		t.Error("Error message should be logged")
 	}
-	if !strings.Contains(buf.String(), "[ERROR]") {
+	if !strings.Contains(buf.String(), "ERROR") {
 		t.Error("Log should contain ERROR level")
 	}
 }
 
 func TestDebugLevel(t *testing.T) {
 	buf := &bytes.Buffer{}
-	log := New(DebugLevel)
-	log.SetOutput(buf)
+	handler := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})
+	log := NewWithHandler(handler)
 	
 	log.Debug("debug message")
 	if !strings.Contains(buf.String(), "debug message") {
 		t.Error("Debug message should be logged at DebugLevel")
 	}
-	if !strings.Contains(buf.String(), "[DEBUG]") {
+	if !strings.Contains(buf.String(), "DEBUG") {
 		t.Error("Log should contain DEBUG level")
 	}
 }
 
 func TestWithField(t *testing.T) {
 	buf := &bytes.Buffer{}
-	log := New(InfoLevel)
-	log.SetOutput(buf)
+	handler := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelInfo})
+	log := NewWithHandler(handler)
 	
 	log.WithField("key", "value").Info("message with field")
 	
@@ -80,8 +81,8 @@ func TestWithField(t *testing.T) {
 
 func TestWithFields(t *testing.T) {
 	buf := &bytes.Buffer{}
-	log := New(InfoLevel)
-	log.SetOutput(buf)
+	handler := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelInfo})
+	log := NewWithHandler(handler)
 	
 	fields := map[string]interface{}{
 		"key1": "value1",
@@ -103,8 +104,8 @@ func TestWithFields(t *testing.T) {
 
 func TestFormattedLogging(t *testing.T) {
 	buf := &bytes.Buffer{}
-	log := New(InfoLevel)
-	log.SetOutput(buf)
+	handler := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelInfo})
+	log := NewWithHandler(handler)
 	
 	log.Infof("formatted message: %s, %d", "test", 123)
 	

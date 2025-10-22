@@ -13,6 +13,7 @@ package main
 
 import (
     "fmt"
+    "log"
     "time"
     
     "github.com/Waryway/Wayframe/pkg/config"
@@ -22,7 +23,13 @@ func main() {
     // Create a loader with prefix
     cfg := config.New("MYAPP")
     
-    // Load with defaults
+    // Optionally load from a JSON file
+    // Falls back to environment variables and defaults if file doesn't exist
+    if err := cfg.LoadFile("config.json"); err != nil {
+        log.Printf("Config file not found, using env vars and defaults: %v", err)
+    }
+    
+    // Load with defaults (Priority: env var → file → default)
     port := cfg.String("PORT", "3000")
     maxConns := cfg.Int("MAX_CONNECTIONS", 100)
     timeout := cfg.Duration("TIMEOUT", 30*time.Second)

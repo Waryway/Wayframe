@@ -15,6 +15,15 @@ import (
 func main() {
 	// Load configuration
 	cfg := config.New("APP")
+	
+	// Try to load configuration from file (optional)
+	// Falls back to environment variables and defaults if file doesn't exist
+	configFile := cfg.String("CONFIG_FILE", "config.json")
+	if err := cfg.LoadFile(configFile); err != nil {
+		// File not found is OK - we'll use env vars and defaults
+		// Only log if it's a different error
+	}
+	
 	port := cfg.String("PORT", "8080")
 	logLevel := cfg.String("LOG_LEVEL", "INFO")
 	shutdownTimeout := cfg.Duration("SHUTDOWN_TIMEOUT", 30*time.Second)

@@ -1,7 +1,8 @@
 // Package logger provides structured logging for Wayframe applications.
 //
-// The logger package offers leveled logging with contextual fields support.
-// It's designed to be simple yet powerful enough for production use.
+// The logger package wraps Go's standard log/slog package with a simplified
+// interface. It offers leveled logging with contextual fields support and
+// is designed to be simple yet powerful enough for production use.
 //
 // # Basic Usage
 //
@@ -36,8 +37,17 @@
 //	log.Infof("Processing %d items", count)
 //	log.Errorf("Connection failed: %v", err)
 //
+// # Using slog Directly
+//
+// For advanced use cases, you can create a logger with a custom slog.Handler:
+//
+//	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+//	    Level: slog.LevelInfo,
+//	})
+//	log := logger.NewWithHandler(handler)
+//
 // # Output Format
 //
-// Log messages are formatted as:
-//   2025-10-22T16:00:00Z [LEVEL] message | field1=value1 field2=value2
+// By default, log messages use slog's text format:
+//   time=2025-10-22T16:00:00.000Z level=INFO msg="message" field1=value1 field2=value2
 package logger

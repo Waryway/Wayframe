@@ -1,14 +1,12 @@
 // Package logger provides structured logging for Wayframe applications.
-// It offers a simple, leveled logging interface with contextual fields.
+// It wraps Go's standard slog package with a simplified interface.
 package logger
 
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
-	"sync"
-	"time"
 )
 
 // Level represents the severity of a log message.
@@ -25,136 +23,113 @@ const (
 	ErrorLevel
 )
 
-var levelNames = map[Level]string{
-	DebugLevel: "DEBUG",
-	InfoLevel:  "INFO",
-	WarnLevel:  "WARN",
-	ErrorLevel: "ERROR",
-}
-
-// Logger provides structured logging capabilities.
+// Logger provides structured logging capabilities using slog.
 type Logger struct {
-	level  Level
-	out    io.Writer
-	mu     sync.Mutex
-	fields map[string]interface{}
+	logger *slog.Logger
 }
 
-// New creates a new Logger with the specified minimum level.
+// New creates a new Logger with the specified minimum level using slog.
 // Logs with a level lower than the minimum will be discarded.
 func New(level Level) *Logger {
+	slogLevel := levelToSlogLevel(level)
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slogLevel,
+	})
 	return &Logger{
-		level:  level,
-		out:    os.Stdout,
-		fields: make(map[string]interface{}),
+		logger: slog.New(handler),
+	}
+}
+
+// NewWithHandler creates a new Logger with a custom slog.Handler.
+func NewWithHandler(handler slog.Handler) *Logger {
+	return &Logger{
+		logger: slog.New(handler),
 	}
 }
 
 // SetOutput sets the output destination for the logger.
 func (l *Logger) SetOutput(w io.Writer) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.out = w
+	handler := slog.NewTextHandler(w, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	l.logger = slog.New(handler)
 }
 
 // WithField creates a new logger with an additional contextual field.
 func (l *Logger) WithField(key string, value interface{}) *Logger {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	
-	fields := make(map[string]interface{}, len(l.fields)+1)
-	for k, v := range l.fields {
-		fields[k] = v
-	}
-	fields[key] = value
-	
 	return &Logger{
-		level:  l.level,
-		out:    l.out,
-		fields: fields,
+		logger: l.logger.With(key, value),
 	}
 }
 
 // WithFields creates a new logger with multiple contextual fields.
 func (l *Logger) WithFields(fields map[string]interface{}) *Logger {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	
-	newFields := make(map[string]interface{}, len(l.fields)+len(fields))
-	for k, v := range l.fields {
-		newFields[k] = v
-	}
+	args := make([]any, 0, len(fields)*2)
 	for k, v := range fields {
-		newFields[k] = v
+		args = append(args, k, v)
 	}
-	
 	return &Logger{
-		level:  l.level,
-		out:    l.out,
-		fields: newFields,
+		logger: l.logger.With(args...),
 	}
 }
 
 // Debug logs a message at DebugLevel.
 func (l *Logger) Debug(msg string) {
-	l.log(DebugLevel, msg)
+	l.logger.Debug(msg)
 }
 
 // Debugf logs a formatted message at DebugLevel.
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.log(DebugLevel, fmt.Sprintf(format, args...))
+	l.logger.Debug(sprintf(format, args...))
 }
 
 // Info logs a message at InfoLevel.
 func (l *Logger) Info(msg string) {
-	l.log(InfoLevel, msg)
+	l.logger.Info(msg)
 }
 
 // Infof logs a formatted message at InfoLevel.
 func (l *Logger) Infof(format string, args ...interface{}) {
-	l.log(InfoLevel, fmt.Sprintf(format, args...))
+	l.logger.Info(sprintf(format, args...))
 }
 
 // Warn logs a message at WarnLevel.
 func (l *Logger) Warn(msg string) {
-	l.log(WarnLevel, msg)
+	l.logger.Warn(msg)
 }
 
 // Warnf logs a formatted message at WarnLevel.
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.log(WarnLevel, fmt.Sprintf(format, args...))
+	l.logger.Warn(sprintf(format, args...))
 }
 
 // Error logs a message at ErrorLevel.
 func (l *Logger) Error(msg string) {
-	l.log(ErrorLevel, msg)
+	l.logger.Error(msg)
 }
 
 // Errorf logs a formatted message at ErrorLevel.
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.log(ErrorLevel, fmt.Sprintf(format, args...))
+	l.logger.Error(sprintf(format, args...))
 }
 
-func (l *Logger) log(level Level, msg string) {
-	if level < l.level {
-		return
+// levelToSlogLevel converts our Level to slog.Level.
+func levelToSlogLevel(level Level) slog.Level {
+	switch level {
+	case DebugLevel:
+		return slog.LevelDebug
+	case InfoLevel:
+		return slog.LevelInfo
+	case WarnLevel:
+		return slog.LevelWarn
+	case ErrorLevel:
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
-	
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	
-	timestamp := time.Now().Format(time.RFC3339)
-	levelName := levelNames[level]
-	
-	// Build log message with fields
-	logMsg := fmt.Sprintf("%s [%s] %s", timestamp, levelName, msg)
-	
-	if len(l.fields) > 0 {
-		logMsg += " |"
-		for k, v := range l.fields {
-			logMsg += fmt.Sprintf(" %s=%v", k, v)
-		}
-	}
-	
-	log.New(l.out, "", 0).Println(logMsg)
+}
+
+// sprintf is a helper to format strings.
+func sprintf(format string, args ...interface{}) string {
+	return fmt.Sprintf(format, args...)
 }

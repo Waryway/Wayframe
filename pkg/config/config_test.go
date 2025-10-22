@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -131,4 +132,79 @@ func TestRequired(t *testing.T) {
 		}
 	}()
 	loader.Required("MISSING_REQUIRED_VAR")
+}
+
+func TestLoadFile(t *testing.T) {
+	// Create a temporary config file
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+	
+	configData := `{
+		"port": "9000",
+		"debug": "true",
+		"timeout": "60s"
+	}`
+	
+	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+		t.Fatalf("failed to create test config file: %v", err)
+	}
+	
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load config file: %v", err)
+	}
+	
+	// Test values from file
+	if val := loader.String("port", "8080"); val != "9000" {
+		t.Errorf("expected '9000' from file, got '%s'", val)
+	}
+	
+	if val := loader.Bool("debug", false); val != true {
+		t.Errorf("expected true from file, got %v", val)
+	}
+	
+	if val := loader.Duration("timeout", 30*time.Second); val != 60*time.Second {
+		t.Errorf("expected 60s from file, got %v", val)
+	}
+}
+
+func TestLoadFileWithEnvOverride(t *testing.T) {
+	// Create a temporary config file
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+	
+	configData := `{
+		"port": "9000"
+	}`
+	
+	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+		t.Fatalf("failed to create test config file: %v", err)
+	}
+	
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load config file: %v", err)
+	}
+	
+	// Environment variable should override file value
+	os.Setenv("PORT", "8888")
+	defer os.Unsetenv("PORT")
+	
+	if val := loader.String("port", "8080"); val != "8888" {
+		t.Errorf("expected '8888' from env (override), got '%s'", val)
+	}
+}
+
+func TestLoadFileNotFound(t *testing.T) {
+	loader := New("")
+	err := loader.LoadFile("/nonexistent/path/config.json")
+	
+	if err == nil {
+		t.Error("expected error for non-existent file")
+	}
+	
+	// Loader should still work with env vars and defaults
+	if val := loader.String("test", "default"); val != "default" {
+		t.Errorf("expected default value after failed file load, got '%s'", val)
+	}
 }

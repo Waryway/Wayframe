@@ -15,20 +15,26 @@ While the Go community tends to avoid frameworks, Wayframe exists to prevent rei
 
 ### config
 
-Configuration management with environment variable support, type-safe loading, and default values.
+Configuration management with support for JSON files, environment variables, and defaults. Environment variable names match configuration keys.
 
 ```go
 import "github.com/Waryway/Wayframe/pkg/config"
 
 cfg := config.New("APP")
+
+// Optionally load from file (falls back to env vars and defaults)
+cfg.LoadFile("config.json")
+
 port := cfg.String("PORT", "8080")
 timeout := cfg.Duration("TIMEOUT", 30*time.Second)
 debug := cfg.Bool("DEBUG", false)
 ```
 
+**Priority order**: Environment variables → File values → Default values
+
 ### logger
 
-Structured logging with levels, contextual fields, and a clean API.
+Structured logging based on Go's standard `log/slog` package with a simplified interface.
 
 ```go
 import "github.com/Waryway/Wayframe/pkg/logger"
