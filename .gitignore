@@ -34,3 +34,10 @@ go.work.sum
 # Bazel
 bazel-*
 .bazel-cache/
+
+# Example binaries
+/stdlib
+/fiber
+/gorilla
+/examples/*/main
+/examples/basic/basic
