@@ -1,0 +1,12 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "gorilla",
+    srcs = ["server.go"],
+    importpath = "github.com/Waryway/Wayframe/internal/web/gorilla",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/web",
+        "@com_github_gorilla_mux//:mux",
+    ],
+)
