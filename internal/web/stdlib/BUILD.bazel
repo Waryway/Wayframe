@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "stdlib",
+    srcs = ["server.go"],
+    importpath = "github.com/Waryway/Wayframe/internal/web/stdlib",
+    visibility = ["//:__subpackages__"],
+    deps = ["//internal/web"],
+)

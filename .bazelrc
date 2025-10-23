@@ -1,5 +1,8 @@
 # Bazel configuration for Wayframe
 
+# Enable Bzlmod (Bazel 8+)
+common --enable_bzlmod
+
 # Build settings
 build --enable_platform_specific_config
 build --incompatible_strict_action_env
