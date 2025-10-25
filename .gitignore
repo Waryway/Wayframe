@@ -41,3 +41,5 @@ bazel-*
 /gorilla
 /examples/*/main
 /examples/basic/basic
+/bazel-wayframe/
+/.idea/

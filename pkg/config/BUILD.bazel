@@ -1,8 +1,11 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "config",
-    srcs = ["config.go"],
+    srcs = [
+        "config.go",
+        "doc.go",
+    ],
     importpath = "github.com/Waryway/Wayframe/pkg/config",
     visibility = ["//visibility:public"],
 )
