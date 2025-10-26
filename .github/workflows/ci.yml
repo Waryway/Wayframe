@@ -91,6 +91,9 @@ jobs:
           test --spawn_strategy=linux-sandbox
           EOF
 
+      - name: Ensure workspace_status.sh is executable
+        run: chmod +x tools/workspace_status.sh
+
       - name: Build all targets
         run: bazel build //...
 
@@ -143,6 +146,9 @@ jobs:
           build --disk_cache=~/.bazel-cache
           test --disk_cache=~/.bazel-cache
           EOF
+
+      - name: Ensure workspace_status.sh is executable
+        run: chmod +x tools/workspace_status.sh
 
       - name: Run tests with coverage
         run: |
