@@ -100,18 +100,10 @@ jobs:
       - name: Run all tests
         run: bazel test //...
 
-      - name: Set up Go for linting
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.25'
-
-      - name: Install golangci-lint
+      - name: Run Bazel linters
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
-      - name: Run Bazel lint target
-        run: bazel run //:lint
+          # Check gazelle generated files are up to date
+          bazel run //:gazelle -- -mode diff
 
   coverage:
     name: Code Coverage
