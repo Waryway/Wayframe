@@ -60,7 +60,7 @@ jobs:
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@0.15.0
         with:
-          bazelisk-version: latest
+          bazelisk-version: 1.x
 
       - name: Restore Bazel cache
         uses: actions/cache@v4
@@ -129,7 +129,7 @@ jobs:
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@v0.15.0
         with:
-          bazelisk-version: latest
+          bazelisk-version: 1.x
 
       - name: Restore Bazel cache
         uses: actions/cache@v4
