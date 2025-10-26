@@ -1,0 +1,7 @@
+# Stub coverage generator for Bazel coverage support
+# This is a placeholder that allows bazel coverage to run without errors
+sh_binary(
+    name = "coverage_generator",
+    srcs = ["coverage_generator.sh"],
+    visibility = ["//visibility:public"],
+)

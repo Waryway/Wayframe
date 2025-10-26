@@ -2,3 +2,18 @@
 load("@gazelle//:def.bzl", "gazelle")
 
 gazelle(name = "gazelle")
+
+# Linting target that runs golangci-lint on all Go code
+sh_binary(
+    name = "lint",
+    srcs = ["lint.sh"],
+    data = [
+        "go.mod",
+        "go.sum",
+        ".golangci.yml",
+    ] + glob([
+        "**/*.go",
+        "**/BUILD.bazel",
+    ]),
+    visibility = ["//visibility:public"],
+)

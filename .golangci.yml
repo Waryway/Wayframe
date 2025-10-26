@@ -1,0 +1,33 @@
+---
+# golangci-lint configuration for Wayframe
+# This configuration ensures all Go code meets quality and style standards
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - staticcheck   # Static analysis
+    - govet         # Go vet
+    - ineffassign   # Detect ineffectual assignments
+    - unused        # Detect unused code
+    - gofmt         # Check formatting
+    - goimports     # Check import formatting
+    - misspell      # Check for misspelled words
+
+linters-settings:
+  errcheck:
+    # Check all errors, including in tests
+    check-type-assertions: true
+    check-blank: true
+
+issues:
+  # Show all issues
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  
+  # Don't skip any files
+  exclude-use-default: false
