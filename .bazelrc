@@ -1,0 +1,35 @@
+# Bazel configuration for Wayframe
+
+# Enable Bzlmod (Bazel 8+)
+common --enable_bzlmod
+
+# Cache settings
+build --disk_cache=~/.bazel-cache
+build --repository_cache=~/.bazel-repo-cache
+
+# Cache settings
+test --test_output=errors
+test --test_summary=detailed
+test --disk_cache=~/.bazel-cache
+build --enable_platform_specific_config
+
+# Test settings
+test --test_output=errors
+test --test_summary=detailed
+test --disk_cache=~/.bazel-cache
+
+# Output settings
+build --color=yes
+build --show_progress_rate_limit=0.5
+
+# Reproducible builds
+build --workspace_status_command=tools/workspace_status.sh
+
+# Performance optimizations
+build --incompatible_use_toolchain_resolution_for_java_rules
+# Reproducible builds
+build --workspace_status_command=tools/workspace_status.sh
+
+# Performance optimizations
+build --incompatible_use_toolchain_resolution_for_java_rules
+
