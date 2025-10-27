@@ -25,9 +25,9 @@
 // # Priority Order
 //
 // Configuration values are resolved in this priority order:
-//   1. Environment variables (highest priority)
-//   2. Values from loaded JSON file
-//   3. Default values provided in the code (lowest priority)
+//  1. Environment variables (highest priority)
+//  2. Values from loaded JSON file
+//  3. Default values provided in the code (lowest priority)
 //
 // # Environment Variable Naming
 //
@@ -49,12 +49,12 @@
 // # Example with File Loading
 //
 //	cfg := config.New("MYAPP")
-//	
+//
 //	// Try to load from file (optional)
 //	if err := cfg.LoadFile("config.json"); err != nil {
 //	    log.Printf("Config file not found, using env vars and defaults: %v", err)
 //	}
-//	
+//
 //	host := cfg.String("HOST", "localhost")
 //	port := cfg.Int("PORT", 8080)
 //	timeout := cfg.Duration("TIMEOUT", 30*time.Second)

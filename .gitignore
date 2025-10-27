@@ -43,3 +43,4 @@ bazel-*
 /examples/basic/basic
 /bazel-wayframe/
 /.idea/
+basic
