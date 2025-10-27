@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Waryway/Wayframe/internal/config"
+	"github.com/Waryway/Wayframe/pkg/config"
 	"github.com/Waryway/Wayframe/pkg/logger"
 )
 
@@ -37,7 +37,7 @@ type Config struct {
 
 // Env represents the application environment with initialized config and logger.
 type Env struct {
-	config       *config.Config
+	config       *config.Loader
 	Logger       *logger.Logger
 	AppConfig    *Config
 	customConfig interface{}
@@ -121,7 +121,7 @@ func (e *Env) SetLogOutput(output *os.File) {
 }
 
 // GetConfig returns the configuration manager for direct access.
-func (e *Env) GetConfig() *config.Config {
+func (e *Env) GetConfig() *config.Loader {
 	return e.config
 }
 

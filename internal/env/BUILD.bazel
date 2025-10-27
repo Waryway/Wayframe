@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/Waryway/Wayframe/internal/env",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/config",
+        "//pkg/config",
         "//pkg/logger",
     ],
 )
