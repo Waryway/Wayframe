@@ -141,8 +141,17 @@ jobs:
           EOF
 
       - name: Ensure workspace_status.sh is executable
-        run: chmod +x tools/workspace_status.sh
-  
+        run: chmod +x tools/workspace_status.
+
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install lcov
+
+      - name: Clean Bazel cache
+        run: bazel clean --expunge
+
+      - name: Run Bazel Coverage
+        run: bazel coverage //pkg/server:server_test --test_output=errors --combined_report=lcov
+
       - name: Run tests with coverage
         run: |
           bazel coverage //... \
