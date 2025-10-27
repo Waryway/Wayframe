@@ -142,11 +142,11 @@ jobs:
 
       - name: Ensure workspace_status.sh is executable
         run: chmod +x tools/workspace_status.sh
-
+  
       - name: Run tests with coverage
         run: |
           bazel coverage //... \
-            --combined_report=lcov \
+            --test_verbose_timeout_warnings --test_output=errors --combined_report=lcov \
             --coverage_report_generator=//tools:coverage_generator
 
       - name: Upload coverage to Codecov
