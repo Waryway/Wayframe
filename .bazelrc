@@ -27,9 +27,3 @@ build --workspace_status_command=tools/workspace_status.sh
 
 # Performance optimizations
 build --incompatible_use_toolchain_resolution_for_java_rules
-# Reproducible builds
-build --workspace_status_command=tools/workspace_status.sh
-
-# Performance optimizations
-build --incompatible_use_toolchain_resolution_for_java_rules
-
