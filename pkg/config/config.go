@@ -275,11 +275,7 @@ func (l *Loader) Load(configStruct interface{}) error {
 				}
 				// Store default in values so Duration() can cache it properly
 				upperKey := strings.ToUpper(configKey)
-				if _, hasEnv := os.LookupEnv(strings.ToUpper(configKey)); !hasEnv {
-					if _, hasFile := l.values[upperKey]; !hasFile {
-						l.values[upperKey] = defaultValue
-					}
-				}
+				l.values[upperKey] = defaultValue
 			}
 			// Use Duration() method which handles priority and caching
 			dur := l.Duration(configKey, defaultDur)
