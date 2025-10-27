@@ -12,7 +12,7 @@ func TestStructTagLoading(t *testing.T) {
 		Port     int           `config:"port" env:"TEST_PORT" default:"8080"`
 		Host     string        `config:"host" env:"TEST_HOST" default:"localhost"`
 		Debug    bool          `config:"debug" env:"TEST_DEBUG" default:"false"`
-		Timeout  time.Duration `config:"timeout" env:"TEST_TIMEOUT" default:"30"`
+		Timeout  time.Duration `config:"timeout" env:"TEST_TIMEOUT" default:"30s"`
 		MaxConns int           `config:"max_conns" default:"100"`
 	}
 	
