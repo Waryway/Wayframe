@@ -493,3 +493,55 @@ func TestDurationCachingWithFileLoad(t *testing.T) {
 		}
 	}
 }
+
+func TestDurationDefaultsNotCached(t *testing.T) {
+	loader := New("")
+
+	// Call Duration with a key that has no config value
+	// The default should be returned but NOT cached
+	dur1 := loader.Duration("NONEXISTENT_TIMEOUT", 10*time.Second)
+	if dur1 != 10*time.Second {
+		t.Errorf("expected default 10s, got %v", dur1)
+	}
+
+	// Verify it's NOT in the cache
+	if _, ok := loader.durations["NONEXISTENT_TIMEOUT"]; ok {
+		t.Error("default value should not be cached")
+	}
+
+	// Second call with different default should return the new default
+	dur2 := loader.Duration("NONEXISTENT_TIMEOUT", 20*time.Second)
+	if dur2 != 20*time.Second {
+		t.Errorf("expected different default 20s, got %v", dur2)
+	}
+
+	// Still should not be cached
+	if _, ok := loader.durations["NONEXISTENT_TIMEOUT"]; ok {
+		t.Error("default value should not be cached")
+	}
+}
+
+func TestDurationParseErrorNotCached(t *testing.T) {
+	loader := New("")
+
+	// Set an invalid duration value
+	os.Setenv("INVALID_TIMEOUT", "not-a-duration")
+	defer os.Unsetenv("INVALID_TIMEOUT")
+
+	// Call should return default due to parse error
+	dur1 := loader.Duration("INVALID_TIMEOUT", 15*time.Second)
+	if dur1 != 15*time.Second {
+		t.Errorf("expected default 15s on parse error, got %v", dur1)
+	}
+
+	// Verify parse error result is NOT cached
+	if _, ok := loader.durations["INVALID_TIMEOUT"]; ok {
+		t.Error("parse error result should not be cached")
+	}
+
+	// Different default should work
+	dur2 := loader.Duration("INVALID_TIMEOUT", 25*time.Second)
+	if dur2 != 25*time.Second {
+		t.Errorf("expected different default 25s, got %v", dur2)
+	}
+}

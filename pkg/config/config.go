@@ -187,7 +187,7 @@ func (l *Loader) Bool(key string, defaultValue bool) bool {
 // Priority: 1) Environment variable, 2) File value, 3) Default value.
 // Accepts values like "1s", "5m", "1h" as per time.ParseDuration.
 // Returns the default value if the value cannot be parsed.
-// Parsed durations are cached to avoid repeated parsing.
+// Successfully parsed durations from config sources are cached to avoid repeated parsing.
 func (l *Loader) Duration(key string, defaultValue time.Duration) time.Duration {
 	key = strings.ToUpper(key)
 
@@ -198,19 +198,17 @@ func (l *Loader) Duration(key string, defaultValue time.Duration) time.Duration 
 
 	val := l.String(key, "")
 	if val == "" {
-		// Cache the default value
-		l.durations[key] = defaultValue
+		// No config value, return default without caching
 		return defaultValue
 	}
 
 	duration, err := time.ParseDuration(val)
 	if err != nil {
-		// Cache the default value on parse error
-		l.durations[key] = defaultValue
+		// Parse error, return default without caching
 		return defaultValue
 	}
 
-	// Cache the parsed duration
+	// Cache the successfully parsed duration from config
 	l.durations[key] = duration
 	return duration
 }
