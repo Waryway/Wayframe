@@ -263,6 +263,30 @@ func (l *Loader) Load(configStruct interface{}) error {
 			configKey = strings.ToLower(field.Name)
 		}
 
+		// Handle time.Duration fields specially using Duration() method
+		if fieldValue.Kind() == reflect.Int64 && fieldValue.Type() == reflect.TypeOf(time.Duration(0)) {
+			defaultValue := field.Tag.Get("default")
+			var defaultDur time.Duration
+			if defaultValue != "" {
+				var err error
+				defaultDur, err = time.ParseDuration(defaultValue)
+				if err != nil {
+					return fmt.Errorf("failed to parse default duration for field %s: %w", field.Name, err)
+				}
+				// Store default in values so Duration() can cache it properly
+				upperKey := strings.ToUpper(configKey)
+				if _, hasEnv := os.LookupEnv(strings.ToUpper(configKey)); !hasEnv {
+					if _, hasFile := l.values[upperKey]; !hasFile {
+						l.values[upperKey] = defaultValue
+					}
+				}
+			}
+			// Use Duration() method which handles priority and caching
+			dur := l.Duration(configKey, defaultDur)
+			fieldValue.SetInt(int64(dur))
+			continue
+		}
+
 		// Get environment variable name
 		envKey := field.Tag.Get("env")
 		if envKey == "" && l.prefix != "" {
@@ -289,7 +313,7 @@ func (l *Loader) Load(configStruct interface{}) error {
 		}
 
 		// Set the field based on its type
-		if err := l.setField(fieldValue, value, strings.ToUpper(configKey)); err != nil {
+		if err := l.setField(fieldValue, value); err != nil {
 			return fmt.Errorf("failed to set field %s: %w", field.Name, err)
 		}
 	}
@@ -297,31 +321,17 @@ func (l *Loader) Load(configStruct interface{}) error {
 	return nil
 }
 
-func (l *Loader) setField(field reflect.Value, value string, configKey string) error {
+func (l *Loader) setField(field reflect.Value, value string) error {
 	switch field.Kind() {
 	case reflect.String:
 		field.SetString(value)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if field.Type() == reflect.TypeOf(time.Duration(0)) {
-			// Check cache first to avoid re-parsing
-			if cached, ok := l.durations[configKey]; ok {
-				field.SetInt(int64(cached))
-			} else {
-				d, err := time.ParseDuration(value)
-				if err != nil {
-					return err
-				}
-				// Cache the parsed duration
-				l.durations[configKey] = d
-				field.SetInt(int64(d))
-			}
-		} else {
-			i, err := strconv.ParseInt(value, 10, 64)
-			if err != nil {
-				return err
-			}
-			field.SetInt(i)
+		// Note: time.Duration fields are handled separately in Load()
+		i, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return err
 		}
+		field.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		i, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
