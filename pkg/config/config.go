@@ -303,13 +303,18 @@ func (l *Loader) setField(field reflect.Value, value string, configKey string) e
 		field.SetString(value)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if field.Type() == reflect.TypeOf(time.Duration(0)) {
-			d, err := time.ParseDuration(value)
-			if err != nil {
-				return err
+			// Check cache first to avoid re-parsing
+			if cached, ok := l.durations[configKey]; ok {
+				field.SetInt(int64(cached))
+			} else {
+				d, err := time.ParseDuration(value)
+				if err != nil {
+					return err
+				}
+				// Cache the parsed duration
+				l.durations[configKey] = d
+				field.SetInt(int64(d))
 			}
-			// Cache the parsed duration
-			l.durations[configKey] = d
-			field.SetInt(int64(d))
 		} else {
 			i, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
