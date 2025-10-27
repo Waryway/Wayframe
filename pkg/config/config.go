@@ -24,16 +24,18 @@ import (
 //	    LogLevel string `config:"log_level" env:"LOG_LEVEL" default:"INFO" file:"config.yaml"`
 //	}
 type Loader struct {
-	values map[string]string
-	prefix string
+	values    map[string]string
+	durations map[string]time.Duration
+	prefix    string
 }
 
 // New creates a new configuration loader with an optional prefix for environment variables.
 // The prefix is prepended to all environment variable names (e.g., "APP" -> "APP_PORT").
 func New(prefix string) *Loader {
 	return &Loader{
-		values: make(map[string]string),
-		prefix: strings.ToUpper(prefix),
+		values:    make(map[string]string),
+		durations: make(map[string]time.Duration),
+		prefix:    strings.ToUpper(prefix),
 	}
 }
 
@@ -185,17 +187,32 @@ func (l *Loader) Bool(key string, defaultValue bool) bool {
 // Priority: 1) Environment variable, 2) File value, 3) Default value.
 // Accepts values like "1s", "5m", "1h" as per time.ParseDuration.
 // Returns the default value if the value cannot be parsed.
+// Parsed durations are cached to avoid repeated parsing.
 func (l *Loader) Duration(key string, defaultValue time.Duration) time.Duration {
+	key = strings.ToUpper(key)
+	
+	// Check if we already parsed this duration
+	if cached, ok := l.durations[key]; ok {
+		return cached
+	}
+	
 	val := l.String(key, "")
 	if val == "" {
+		// Cache the default value
+		l.durations[key] = defaultValue
 		return defaultValue
 	}
 	
-	if duration, err := time.ParseDuration(val); err == nil {
-		return duration
+	duration, err := time.ParseDuration(val)
+	if err != nil {
+		// Cache the default value on parse error
+		l.durations[key] = defaultValue
+		return defaultValue
 	}
 	
-	return defaultValue
+	// Cache the parsed duration
+	l.durations[key] = duration
+	return duration
 }
 
 // Required loads a required string configuration value.
@@ -274,7 +291,7 @@ func (l *Loader) Load(configStruct interface{}) error {
 		}
 		
 		// Set the field based on its type
-		if err := l.setField(fieldValue, value); err != nil {
+		if err := l.setField(fieldValue, value, strings.ToUpper(configKey)); err != nil {
 			return fmt.Errorf("failed to set field %s: %w", field.Name, err)
 		}
 	}
@@ -282,7 +299,7 @@ func (l *Loader) Load(configStruct interface{}) error {
 	return nil
 }
 
-func (l *Loader) setField(field reflect.Value, value string) error {
+func (l *Loader) setField(field reflect.Value, value string, configKey string) error {
 	switch field.Kind() {
 	case reflect.String:
 		field.SetString(value)
@@ -292,6 +309,8 @@ func (l *Loader) setField(field reflect.Value, value string) error {
 			if err != nil {
 				return err
 			}
+			// Cache the parsed duration
+			l.durations[configKey] = d
 			field.SetInt(int64(d))
 		} else {
 			i, err := strconv.ParseInt(value, 10, 64)

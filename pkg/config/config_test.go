@@ -378,3 +378,118 @@ func TestLoadFileNotFound(t *testing.T) {
 		t.Errorf("expected default value after failed file load, got '%s'", val)
 	}
 }
+
+func TestDurationCaching(t *testing.T) {
+	loader := New("")
+	
+	// Set an environment variable
+	os.Setenv("TEST_TIMEOUT", "45s")
+	defer os.Unsetenv("TEST_TIMEOUT")
+	
+	// First call should parse and cache
+	dur1 := loader.Duration("TEST_TIMEOUT", 30*time.Second)
+	if dur1 != 45*time.Second {
+		t.Errorf("expected 45s, got %v", dur1)
+	}
+	
+	// Verify it's in the cache
+	if cached, ok := loader.durations["TEST_TIMEOUT"]; !ok {
+		t.Error("expected duration to be cached")
+	} else if cached != 45*time.Second {
+		t.Errorf("expected cached value 45s, got %v", cached)
+	}
+	
+	// Second call should return cached value (even if we change the env var)
+	os.Setenv("TEST_TIMEOUT", "60s")
+	dur2 := loader.Duration("TEST_TIMEOUT", 30*time.Second)
+	if dur2 != 45*time.Second {
+		t.Errorf("expected cached value 45s, got %v", dur2)
+	}
+}
+
+func TestDurationCachingInStruct(t *testing.T) {
+	type TestConfig struct {
+		ReadTimeout  time.Duration `config:"read_timeout" default:"10s"`
+		WriteTimeout time.Duration `config:"write_timeout" default:"20s"`
+	}
+	
+	loader := New("")
+	var cfg TestConfig
+	
+	// Load config - should parse and cache durations
+	if err := loader.Load(&cfg); err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	
+	// Verify struct values
+	if cfg.ReadTimeout != 10*time.Second {
+		t.Errorf("expected read_timeout 10s, got %v", cfg.ReadTimeout)
+	}
+	if cfg.WriteTimeout != 20*time.Second {
+		t.Errorf("expected write_timeout 20s, got %v", cfg.WriteTimeout)
+	}
+	
+	// Verify durations are cached
+	if cached, ok := loader.durations["READ_TIMEOUT"]; !ok {
+		t.Error("expected read_timeout to be cached")
+	} else if cached != 10*time.Second {
+		t.Errorf("expected cached read_timeout 10s, got %v", cached)
+	}
+	
+	if cached, ok := loader.durations["WRITE_TIMEOUT"]; !ok {
+		t.Error("expected write_timeout to be cached")
+	} else if cached != 20*time.Second {
+		t.Errorf("expected cached write_timeout 20s, got %v", cached)
+	}
+	
+	// Accessing via Duration() should return cached value
+	readTimeout := loader.Duration("read_timeout", 5*time.Second)
+	if readTimeout != 10*time.Second {
+		t.Errorf("expected cached read_timeout 10s, got %v", readTimeout)
+	}
+}
+
+func TestDurationCachingWithFileLoad(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+	
+	jsonData := `{
+		"timeout": "25s",
+		"idle_timeout": "100s"
+	}`
+	
+	if err := os.WriteFile(configPath, []byte(jsonData), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+	
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load file: %v", err)
+	}
+	
+	// First call should parse and cache
+	timeout := loader.Duration("timeout", 30*time.Second)
+	if timeout != 25*time.Second {
+		t.Errorf("expected timeout 25s, got %v", timeout)
+	}
+	
+	idleTimeout := loader.Duration("idle_timeout", 60*time.Second)
+	if idleTimeout != 100*time.Second {
+		t.Errorf("expected idle_timeout 100s, got %v", idleTimeout)
+	}
+	
+	// Verify both are cached
+	if cached, ok := loader.durations["TIMEOUT"]; !ok || cached != 25*time.Second {
+		t.Error("expected timeout to be cached with correct value")
+	}
+	if cached, ok := loader.durations["IDLE_TIMEOUT"]; !ok || cached != 100*time.Second {
+		t.Error("expected idle_timeout to be cached with correct value")
+	}
+	
+	// Multiple calls should return cached values
+	for i := 0; i < 3; i++ {
+		if d := loader.Duration("timeout", 30*time.Second); d != 25*time.Second {
+			t.Errorf("call %d: expected cached timeout 25s, got %v", i, d)
+		}
+	}
+}
