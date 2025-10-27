@@ -141,7 +141,7 @@ jobs:
           EOF
 
       - name: Ensure workspace_status.sh is executable
-        run: chmod +x tools/workspace_status.
+        run: chmod +x tools/workspace_status.sh
 
       - name: Install lcov
         run: sudo apt-get update && sudo apt-get install lcov
