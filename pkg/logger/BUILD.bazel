@@ -1,0 +1,17 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "logger",
+    srcs = [
+        "doc.go",
+        "logger.go",
+    ],
+    importpath = "github.com/Waryway/Wayframe/pkg/logger",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "logger_test",
+    srcs = ["logger_test.go"],
+    embed = [":logger"],
+)

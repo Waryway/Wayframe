@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "gorilla_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/Waryway/Wayframe/examples/gorilla",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/env",
+        "//internal/web",
+        "//internal/web/gorilla",
+    ],
+)
+
+go_binary(
+    name = "gorilla",
+    embed = [":gorilla_lib"],
+    visibility = ["//visibility:public"],
+)

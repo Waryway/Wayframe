@@ -1,0 +1,547 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+)
+
+func TestStructTagLoading(t *testing.T) {
+	type TestConfig struct {
+		Port     int           `config:"port" env:"TEST_PORT" default:"8080"`
+		Host     string        `config:"host" env:"TEST_HOST" default:"localhost"`
+		Debug    bool          `config:"debug" env:"TEST_DEBUG" default:"false"`
+		Timeout  time.Duration `config:"timeout" env:"TEST_TIMEOUT" default:"30s"`
+		MaxConns int           `config:"max_conns" default:"100"`
+	}
+
+	loader := New("TEST")
+	var testCfg TestConfig
+
+	if err := loader.Load(&testCfg); err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	// Check defaults
+	if testCfg.Port != 8080 {
+		t.Errorf("expected port 8080, got %d", testCfg.Port)
+	}
+	if testCfg.Host != "localhost" {
+		t.Errorf("expected host localhost, got %s", testCfg.Host)
+	}
+	if testCfg.Debug != false {
+		t.Errorf("expected debug false, got %v", testCfg.Debug)
+	}
+	if testCfg.Timeout != 30*time.Second {
+		t.Errorf("expected timeout 30s, got %v", testCfg.Timeout)
+	}
+	if testCfg.MaxConns != 100 {
+		t.Errorf("expected max_conns 100, got %d", testCfg.MaxConns)
+	}
+}
+
+func TestEnvVarOverride(t *testing.T) {
+	type TestConfig struct {
+		Port int `config:"port" env:"TEST_PORT" default:"8080"`
+	}
+
+	os.Setenv("TEST_PORT", "9000")
+	defer os.Unsetenv("TEST_PORT")
+
+	loader := New("TEST")
+	var testCfg TestConfig
+
+	if err := loader.Load(&testCfg); err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	if testCfg.Port != 9000 {
+		t.Errorf("expected port 9000 from env var, got %d", testCfg.Port)
+	}
+}
+
+func TestJSONFileLoading(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+
+	jsonData := `{
+		"port": 9999,
+		"host": "example.com",
+		"debug": true
+	}`
+
+	if err := os.WriteFile(configPath, []byte(jsonData), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+
+	type TestConfig struct {
+		Port  int    `config:"port" default:"8080"`
+		Host  string `config:"host" default:"localhost"`
+		Debug bool   `config:"debug" default:"false"`
+	}
+
+	loader := New("")
+	// Load the file separately
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load file: %v", err)
+	}
+
+	var testCfg TestConfig
+	if err := loader.Load(&testCfg); err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	if testCfg.Port != 9999 {
+		t.Errorf("expected port 9999 from file, got %d", testCfg.Port)
+	}
+	if testCfg.Host != "example.com" {
+		t.Errorf("expected host example.com from file, got %s", testCfg.Host)
+	}
+	if testCfg.Debug != true {
+		t.Errorf("expected debug true from file, got %v", testCfg.Debug)
+	}
+}
+
+func TestYAMLFileLoading(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	yamlData := `port: 7777
+host: yaml.example.com
+debug: true
+`
+
+	if err := os.WriteFile(configPath, []byte(yamlData), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load YAML file: %v", err)
+	}
+
+	port := loader.Int("port", 8080)
+	if port != 7777 {
+		t.Errorf("expected port 7777 from YAML, got %d", port)
+	}
+
+	host := loader.String("host", "localhost")
+	if host != "yaml.example.com" {
+		t.Errorf("expected host yaml.example.com from YAML, got %s", host)
+	}
+}
+
+func TestKeyValueFileLoading(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.env")
+
+	envData := `PORT=6666
+HOST=env.example.com
+DEBUG=yes
+# Comment line
+TIMEOUT=45s
+`
+
+	if err := os.WriteFile(configPath, []byte(envData), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load key-value file: %v", err)
+	}
+
+	port := loader.Int("port", 8080)
+	if port != 6666 {
+		t.Errorf("expected port 6666 from env file, got %d", port)
+	}
+
+	host := loader.String("host", "localhost")
+	if host != "env.example.com" {
+		t.Errorf("expected host env.example.com from env file, got %s", host)
+	}
+
+	debug := loader.Bool("debug", false)
+	if debug != true {
+		t.Errorf("expected debug true from env file, got %v", debug)
+	}
+}
+
+func TestDirectAccessMethods(t *testing.T) {
+	loader := New("")
+
+	// String
+	val := loader.String("NONEXISTENT", "default")
+	if val != "default" {
+		t.Errorf("expected 'default', got '%s'", val)
+	}
+
+	// Int
+	intVal := loader.Int("NONEXISTENT", 42)
+	if intVal != 42 {
+		t.Errorf("expected 42, got %d", intVal)
+	}
+
+	// Bool
+	boolVal := loader.Bool("NONEXISTENT", true)
+	if boolVal != true {
+		t.Errorf("expected true, got %v", boolVal)
+	}
+
+	// Duration
+	durVal := loader.Duration("NONEXISTENT", 5*time.Second)
+	if durVal != 5*time.Second {
+		t.Errorf("expected 5s, got %v", durVal)
+	}
+}
+
+func TestString(t *testing.T) {
+	loader := New("")
+
+	// Test default value
+	val := loader.String("NONEXISTENT_VAR", "default")
+	if val != "default" {
+		t.Errorf("expected 'default', got '%s'", val)
+	}
+
+	// Test environment variable
+	os.Setenv("TEST_VAR", "test_value")
+	defer os.Unsetenv("TEST_VAR")
+
+	val = loader.String("TEST_VAR", "default")
+	if val != "test_value" {
+		t.Errorf("expected 'test_value', got '%s'", val)
+	}
+}
+
+func TestInt(t *testing.T) {
+	loader := New("")
+
+	// Test default value
+	val := loader.Int("NONEXISTENT_VAR", 42)
+	if val != 42 {
+		t.Errorf("expected 42, got %d", val)
+	}
+
+	// Test environment variable
+	os.Setenv("TEST_INT", "123")
+	defer os.Unsetenv("TEST_INT")
+
+	val = loader.Int("TEST_INT", 42)
+	if val != 123 {
+		t.Errorf("expected 123, got %d", val)
+	}
+
+	// Test invalid int
+	os.Setenv("TEST_INT_INVALID", "not_a_number")
+	defer os.Unsetenv("TEST_INT_INVALID")
+
+	val = loader.Int("TEST_INT_INVALID", 42)
+	if val != 42 {
+		t.Errorf("expected default 42 for invalid int, got %d", val)
+	}
+}
+
+func TestBool(t *testing.T) {
+	loader := New("")
+
+	tests := []struct {
+		envVal   string
+		expected bool
+	}{
+		{"true", true},
+		{"TRUE", true},
+		{"1", true},
+		{"yes", true},
+		{"on", true},
+		{"false", false},
+		{"FALSE", false},
+		{"0", false},
+		{"no", false},
+		{"off", false},
+	}
+
+	for _, tt := range tests {
+		os.Setenv("TEST_BOOL", tt.envVal)
+		val := loader.Bool("TEST_BOOL", false)
+		if val != tt.expected {
+			t.Errorf("for value '%s', expected %v, got %v", tt.envVal, tt.expected, val)
+		}
+		os.Unsetenv("TEST_BOOL")
+	}
+}
+
+func TestPrefix(t *testing.T) {
+	loader := New("APP")
+
+	os.Setenv("APP_PORT", "8080")
+	defer os.Unsetenv("APP_PORT")
+
+	val := loader.String("PORT", "3000")
+	if val != "8080" {
+		t.Errorf("expected '8080', got '%s'", val)
+	}
+}
+
+func TestRequired(t *testing.T) {
+	loader := New("")
+
+	os.Setenv("REQUIRED_VAR", "value")
+	defer os.Unsetenv("REQUIRED_VAR")
+
+	val := loader.Required("REQUIRED_VAR")
+	if val != "value" {
+		t.Errorf("expected 'value', got '%s'", val)
+	}
+
+	// Test panic for missing required
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for missing required variable")
+		}
+	}()
+	loader.Required("MISSING_REQUIRED_VAR")
+}
+
+func TestLoadFile(t *testing.T) {
+	// Create a temporary config file
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+
+	configData := `{
+		"port": "9000",
+		"debug": "true",
+		"timeout": "60s"
+	}`
+
+	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+		t.Fatalf("failed to create test config file: %v", err)
+	}
+
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load config file: %v", err)
+	}
+
+	// Test values from file
+	if val := loader.String("port", "8080"); val != "9000" {
+		t.Errorf("expected '9000' from file, got '%s'", val)
+	}
+
+	if val := loader.Bool("debug", false); val != true {
+		t.Errorf("expected true from file, got %v", val)
+	}
+
+	if val := loader.Duration("timeout", 30*time.Second); val != 60*time.Second {
+		t.Errorf("expected 60s from file, got %v", val)
+	}
+}
+
+func TestLoadFileWithEnvOverride(t *testing.T) {
+	// Create a temporary config file
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+
+	configData := `{
+		"port": "9000"
+	}`
+
+	if err := os.WriteFile(configPath, []byte(configData), 0644); err != nil {
+		t.Fatalf("failed to create test config file: %v", err)
+	}
+
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load config file: %v", err)
+	}
+
+	// Environment variable should override file value
+	os.Setenv("PORT", "8888")
+	defer os.Unsetenv("PORT")
+
+	if val := loader.String("port", "8080"); val != "8888" {
+		t.Errorf("expected '8888' from env (override), got '%s'", val)
+	}
+}
+
+func TestLoadFileNotFound(t *testing.T) {
+	loader := New("")
+	err := loader.LoadFile("/nonexistent/path/config.json")
+
+	if err == nil {
+		t.Error("expected error for non-existent file")
+	}
+
+	// Loader should still work with env vars and defaults
+	if val := loader.String("test", "default"); val != "default" {
+		t.Errorf("expected default value after failed file load, got '%s'", val)
+	}
+}
+
+func TestDurationCaching(t *testing.T) {
+	loader := New("")
+
+	// Set an environment variable
+	os.Setenv("TEST_TIMEOUT", "45s")
+	defer os.Unsetenv("TEST_TIMEOUT")
+
+	// First call should parse and cache
+	dur1 := loader.Duration("TEST_TIMEOUT", 30*time.Second)
+	if dur1 != 45*time.Second {
+		t.Errorf("expected 45s, got %v", dur1)
+	}
+
+	// Verify it's in the cache
+	if cached, ok := loader.durations["TEST_TIMEOUT"]; !ok {
+		t.Error("expected duration to be cached")
+	} else if cached != 45*time.Second {
+		t.Errorf("expected cached value 45s, got %v", cached)
+	}
+
+	// Second call should return cached value (even if we change the env var)
+	os.Setenv("TEST_TIMEOUT", "60s")
+	dur2 := loader.Duration("TEST_TIMEOUT", 30*time.Second)
+	if dur2 != 45*time.Second {
+		t.Errorf("expected cached value 45s, got %v", dur2)
+	}
+}
+
+func TestDurationCachingInStruct(t *testing.T) {
+	type TestConfig struct {
+		ReadTimeout  time.Duration `config:"read_timeout" default:"10s"`
+		WriteTimeout time.Duration `config:"write_timeout" default:"20s"`
+	}
+
+	loader := New("")
+	var cfg TestConfig
+
+	// Load config - should parse and cache durations
+	if err := loader.Load(&cfg); err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	// Verify struct values
+	if cfg.ReadTimeout != 10*time.Second {
+		t.Errorf("expected read_timeout 10s, got %v", cfg.ReadTimeout)
+	}
+	if cfg.WriteTimeout != 20*time.Second {
+		t.Errorf("expected write_timeout 20s, got %v", cfg.WriteTimeout)
+	}
+
+	// Verify durations are cached
+	if cached, ok := loader.durations["READ_TIMEOUT"]; !ok {
+		t.Error("expected read_timeout to be cached")
+	} else if cached != 10*time.Second {
+		t.Errorf("expected cached read_timeout 10s, got %v", cached)
+	}
+
+	if cached, ok := loader.durations["WRITE_TIMEOUT"]; !ok {
+		t.Error("expected write_timeout to be cached")
+	} else if cached != 20*time.Second {
+		t.Errorf("expected cached write_timeout 20s, got %v", cached)
+	}
+
+	// Accessing via Duration() should return cached value
+	readTimeout := loader.Duration("read_timeout", 5*time.Second)
+	if readTimeout != 10*time.Second {
+		t.Errorf("expected cached read_timeout 10s, got %v", readTimeout)
+	}
+}
+
+func TestDurationCachingWithFileLoad(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+
+	jsonData := `{
+		"timeout": "25s",
+		"idle_timeout": "100s"
+	}`
+
+	if err := os.WriteFile(configPath, []byte(jsonData), 0644); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
+
+	loader := New("")
+	if err := loader.LoadFile(configPath); err != nil {
+		t.Fatalf("failed to load file: %v", err)
+	}
+
+	// First call should parse and cache
+	timeout := loader.Duration("timeout", 30*time.Second)
+	if timeout != 25*time.Second {
+		t.Errorf("expected timeout 25s, got %v", timeout)
+	}
+
+	idleTimeout := loader.Duration("idle_timeout", 60*time.Second)
+	if idleTimeout != 100*time.Second {
+		t.Errorf("expected idle_timeout 100s, got %v", idleTimeout)
+	}
+
+	// Verify both are cached
+	if cached, ok := loader.durations["TIMEOUT"]; !ok || cached != 25*time.Second {
+		t.Error("expected timeout to be cached with correct value")
+	}
+	if cached, ok := loader.durations["IDLE_TIMEOUT"]; !ok || cached != 100*time.Second {
+		t.Error("expected idle_timeout to be cached with correct value")
+	}
+
+	// Multiple calls should return cached values
+	for i := 0; i < 3; i++ {
+		if d := loader.Duration("timeout", 30*time.Second); d != 25*time.Second {
+			t.Errorf("call %d: expected cached timeout 25s, got %v", i, d)
+		}
+	}
+}
+
+func TestDurationDefaultsNotCached(t *testing.T) {
+	loader := New("")
+
+	// Call Duration with a key that has no config value
+	// The default should be returned but NOT cached
+	dur1 := loader.Duration("NONEXISTENT_TIMEOUT", 10*time.Second)
+	if dur1 != 10*time.Second {
+		t.Errorf("expected default 10s, got %v", dur1)
+	}
+
+	// Verify it's NOT in the cache
+	if _, ok := loader.durations["NONEXISTENT_TIMEOUT"]; ok {
+		t.Error("default value should not be cached")
+	}
+
+	// Second call with different default should return the new default
+	dur2 := loader.Duration("NONEXISTENT_TIMEOUT", 20*time.Second)
+	if dur2 != 20*time.Second {
+		t.Errorf("expected different default 20s, got %v", dur2)
+	}
+
+	// Still should not be cached
+	if _, ok := loader.durations["NONEXISTENT_TIMEOUT"]; ok {
+		t.Error("default value should not be cached")
+	}
+}
+
+func TestDurationParseErrorNotCached(t *testing.T) {
+	loader := New("")
+
+	// Set an invalid duration value
+	os.Setenv("INVALID_TIMEOUT", "not-a-duration")
+	defer os.Unsetenv("INVALID_TIMEOUT")
+
+	// Call should return default due to parse error
+	dur1 := loader.Duration("INVALID_TIMEOUT", 15*time.Second)
+	if dur1 != 15*time.Second {
+		t.Errorf("expected default 15s on parse error, got %v", dur1)
+	}
+
+	// Verify parse error result is NOT cached
+	if _, ok := loader.durations["INVALID_TIMEOUT"]; ok {
+		t.Error("parse error result should not be cached")
+	}
+
+	// Different default should work
+	dur2 := loader.Duration("INVALID_TIMEOUT", 25*time.Second)
+	if dur2 != 25*time.Second {
+		t.Errorf("expected different default 25s, got %v", dur2)
+	}
+}
