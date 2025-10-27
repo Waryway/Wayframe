@@ -49,7 +49,7 @@ func (l *Loader) LoadFile(path string) error {
 
 	// Detect format from extension
 	ext := strings.ToLower(path[strings.LastIndex(path, ".")+1:])
-	
+
 	switch ext {
 	case "json":
 		return l.loadJSON(data)
@@ -74,7 +74,7 @@ func (l *Loader) loadJSON(data []byte) error {
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse JSON: %w", err)
 	}
-	
+
 	l.flattenMap("", config)
 	return nil
 }
@@ -84,7 +84,7 @@ func (l *Loader) loadYAML(data []byte) error {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse YAML: %w", err)
 	}
-	
+
 	l.flattenMap("", config)
 	return nil
 }
@@ -96,7 +96,7 @@ func (l *Loader) loadKeyValue(data []byte) error {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) == 2 {
 			key := strings.TrimSpace(parts[0])
@@ -115,7 +115,7 @@ func (l *Loader) flattenMap(prefix string, m map[string]interface{}) {
 		if prefix != "" {
 			key = prefix + "." + k
 		}
-		
+
 		switch val := v.(type) {
 		case map[string]interface{}:
 			l.flattenMap(key, val)
@@ -130,18 +130,18 @@ func (l *Loader) flattenMap(prefix string, m map[string]interface{}) {
 // The environment variable name matches the key name (with prefix if set).
 func (l *Loader) String(key, defaultValue string) string {
 	key = strings.ToUpper(key)
-	
+
 	// Check environment variable first
 	envKey := l.buildKey(key)
 	if val := os.Getenv(envKey); val != "" {
 		return val
 	}
-	
+
 	// Check loaded file values
 	if val, ok := l.values[key]; ok {
 		return val
 	}
-	
+
 	// Return default
 	return defaultValue
 }
@@ -154,11 +154,11 @@ func (l *Loader) Int(key string, defaultValue int) int {
 	if val == "" {
 		return defaultValue
 	}
-	
+
 	if intVal, err := strconv.Atoi(val); err == nil {
 		return intVal
 	}
-	
+
 	return defaultValue
 }
 
@@ -171,7 +171,7 @@ func (l *Loader) Bool(key string, defaultValue bool) bool {
 	if val == "" {
 		return defaultValue
 	}
-	
+
 	val = strings.ToLower(val)
 	if val == "true" || val == "1" || val == "yes" || val == "on" {
 		return true
@@ -179,7 +179,7 @@ func (l *Loader) Bool(key string, defaultValue bool) bool {
 	if val == "false" || val == "0" || val == "no" || val == "off" {
 		return false
 	}
-	
+
 	return defaultValue
 }
 
@@ -190,26 +190,26 @@ func (l *Loader) Bool(key string, defaultValue bool) bool {
 // Parsed durations are cached to avoid repeated parsing.
 func (l *Loader) Duration(key string, defaultValue time.Duration) time.Duration {
 	key = strings.ToUpper(key)
-	
+
 	// Check if we already parsed this duration
 	if cached, ok := l.durations[key]; ok {
 		return cached
 	}
-	
+
 	val := l.String(key, "")
 	if val == "" {
 		// Cache the default value
 		l.durations[key] = defaultValue
 		return defaultValue
 	}
-	
+
 	duration, err := time.ParseDuration(val)
 	if err != nil {
 		// Cache the default value on parse error
 		l.durations[key] = defaultValue
 		return defaultValue
 	}
-	
+
 	// Cache the parsed duration
 	l.durations[key] = duration
 	return duration
@@ -242,29 +242,29 @@ func (l *Loader) Load(configStruct interface{}) error {
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("config must be a pointer to a struct")
 	}
-	
+
 	v = v.Elem()
 	t := v.Type()
-	
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		fieldValue := v.Field(i)
-		
+
 		if !fieldValue.CanSet() {
 			continue
 		}
-		
+
 		// Load file if specified
 		if filePath := field.Tag.Get("file"); filePath != "" {
 			l.LoadFile(filePath)
 		}
-		
+
 		// Get configuration key
 		configKey := field.Tag.Get("config")
 		if configKey == "" {
 			configKey = strings.ToLower(field.Name)
 		}
-		
+
 		// Get environment variable name
 		envKey := field.Tag.Get("env")
 		if envKey == "" && l.prefix != "" {
@@ -272,10 +272,10 @@ func (l *Loader) Load(configStruct interface{}) error {
 		} else if envKey == "" {
 			envKey = strings.ToUpper(configKey)
 		}
-		
+
 		// Get default value
 		defaultValue := field.Tag.Get("default")
-		
+
 		// Priority: env var > file > default
 		var value string
 		if envVal := os.Getenv(envKey); envVal != "" {
@@ -285,17 +285,17 @@ func (l *Loader) Load(configStruct interface{}) error {
 		} else {
 			value = defaultValue
 		}
-		
+
 		if value == "" {
 			continue
 		}
-		
+
 		// Set the field based on its type
 		if err := l.setField(fieldValue, value, strings.ToUpper(configKey)); err != nil {
 			return fmt.Errorf("failed to set field %s: %w", field.Name, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -342,6 +342,6 @@ func (l *Loader) setField(field reflect.Value, value string, configKey string) e
 	default:
 		return fmt.Errorf("unsupported field type: %v", field.Kind())
 	}
-	
+
 	return nil
 }
