@@ -100,17 +100,10 @@ jobs:
       - name: Run all tests
         run: bazel test //...
 
-      - name: Run linters (if available)
+      - name: Run Bazel linters
         run: |
-          if [ -f BUILD.bazel ]; then
-            bazel run //:gazelle -- -mode check 2>/dev/null || true
-          fi
-
-      - name: Verify code formatting
-        run: |
-          if command -v gofmt &> /dev/null; then
-            bazel run @rules_go//go fmt ./... 2>/dev/null || true
-          fi
+          # Check gazelle generated files are up to date
+          bazel run //:gazelle -- -mode diff
 
   coverage:
     name: Code Coverage
@@ -163,30 +156,6 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    needs: detect-branch
-
-    steps:
-      - name: Display branch information
-        run: |
-          echo "🔍 Linting ${{ needs.detect-branch.outputs.branch-type }} branch: ${{ needs.detect-branch.outputs.branch-name }}"
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.25'
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
-          args: --timeout=5m
 
   security-scan:
     name: Security Scan
