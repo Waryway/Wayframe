@@ -8,22 +8,31 @@
 - Enable bzlmod in `.bazelrc` with `common --enable_bzlmod`
 - Use `bazel_dep()` for external dependencies
 - Use extensions for Go SDK and dependencies
-
+- Do not use io_bazel_rules_go, just use rules_go
 ### Go 1.25
 - Use Go 1.25 for all development
 - Leverage modern Go features including log/slog
 - Follow idiomatic Go practices
+- Prefer pkg/logger over fmt.Println for logging
+
+### React | NODE | Javascript
+- Use React for frontend applications
+- Use pnpm for package management
+- Use bazel rules for building React apps
+- Embed React builds into Go servers for deployment
 
 ### Internal Package Structure
-- Use `internal/` directory for framework internals
-- Packages in `internal/` are not importable by external projects
-- Key internal packages:
-  - `internal/config` - Configuration management
-  - `internal/env` - Environment initialization
-  - `internal/web` - Web server abstractions
-  - `internal/web/stdlib` - Standard library HTTP server
-  - `internal/web/fiber` - Fiber web framework adapter
-  - `internal/web/gorilla` - Gorilla Mux adapter
+- Prefer public packages under `pkg/` for APIs
+- Examples live under `examples/`
+- Avoid long-lived framework code under `internal/` unless truly module-private.
+- Key packages and locations:
+  - `examples/react/env` - Example-scoped environment/config + logger helper
+  - `pkg/config` - Configuration loader and tag-based binding
+  - `pkg/logger` - Structured logging wrapper (slog)
+  - `pkg/server` - Web server utilities and interfaces
+  - `pkg/server/stdlib` - Standard library HTTP adapter
+  - `pkg/server/fiber` - Fiber adapter
+  - `pkg/server/gorilla` - Gorilla Mux adapter
 
 ## Configuration Management
 
@@ -37,10 +46,10 @@
 
 ## Web Server Interface
 
-All web servers implement `internal/web.Server` interface:
-- stdlib - Standard library net/http
-- fiber - Fiber v2 framework
-- gorilla - Gorilla Mux router
+All web servers implement a common adapter under `pkg/server`:
+- stdlib - Standard library net/http (`pkg/server/stdlib`)
+- fiber - Fiber v2 framework (`pkg/server/fiber`)
+- gorilla - Gorilla Mux router (`pkg/server/gorilla`)
 
 ## Build Commands
 

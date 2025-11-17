@@ -44,3 +44,7 @@ bazel-*
 /bazel-wayframe/
 /.idea/
 basic
+/CUserskawie.bash_history
+/examples/react/node_modules/
+/examples/react/build/
+/node_modules/

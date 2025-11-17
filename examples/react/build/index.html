@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Wayframe React Example" />
+    <title>Wayframe React Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .info-value {
+            font-family: 'Courier New', monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+        }
+
+        .nav {
+            margin-top: 2rem;
+        }
+
+        .nav a {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .content {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            min-height: 100px;
+        }
+
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Wayframe + React</h1>
+        <p class="subtitle">A React application served by Go</p>
+
+        <div class="info-card">
+            <h2 style="margin-bottom: 1rem;">Environment Information</h2>
+            <div class="info-item">
+                <span class="info-label">API URL:</span>
+                <span class="info-value" id="api-url">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">App Version:</span>
+                <span class="info-value" id="app-version">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Environment:</span>
+                <span class="info-value" id="environment">Loading...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Current Path:</span>
+                <span class="info-value" id="current-path">Loading...</span>
+            </div>
+        </div>
+
+        <div class="nav">
+            <a href="/" id="home-link">Home</a>
+            <a href="/about" id="about-link">About</a>
+            <a href="/features" id="features-link">Features</a>
+        </div>
+
+        <div class="content" id="content">
+            <p>Click on the navigation links above to see SPA routing in action!</p>
+        </div>
+    </div>
+
+    <script>
+        // Access environment variables injected by Go server
+        const env = window.__REACT_ENV__ || {};
+
+        // Display environment information
+        document.getElementById('api-url').textContent = env.REACT_APP_API_URL || 'Not set';
+        document.getElementById('app-version').textContent = env.REACT_APP_VERSION || 'Not set';
+        document.getElementById('environment').textContent = env.REACT_APP_ENV || 'production';
+
+        // Simple SPA routing
+        function updateContent() {
+            const path = window.location.pathname;
+            document.getElementById('current-path').textContent = path;
+
+            const content = document.getElementById('content');
+
+            // Update active link
+            document.querySelectorAll('.nav a').forEach(link => {
+                link.style.background = 'rgba(255,255,255,0.2)';
+            });
+
+            switch(path) {
+                case '/':
+                    content.innerHTML = `
+                        <h3>Welcome Home!</h3>
+                        <p style="margin-top: 1rem;">This is a React application served by a Go server using Wayframe.</p>
+                        <p style="margin-top: 0.5rem;">The Go server handles:</p>
+                        <ul style="margin-top: 0.5rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+                            <li>✓ Serving static assets with proper caching</li>
+                            <li>✓ SPA routing (all routes serve index.html)</li>
+                            <li>✓ Environment variable injection</li>
+                            <li>✓ Content hashing detection for cache optimization</li>
+                        </ul>
+                    `;
+                    document.getElementById('home-link').style.background = 'rgba(255,255,255,0.3)';
+                    break;
+
+                case '/about':
+                    content.innerHTML = `
+                        <h3>About This Example</h3>
+                        <p style="margin-top: 1rem;">This example demonstrates the <code>pkg/react</code> package from Wayframe.</p>
+                        <p style="margin-top: 0.5rem;">Key features:</p>
+                        <ul style="margin-top: 0.5rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+                            <li>🔧 Configurable base path and build directory</li>
+                            <li>🌍 Environment variable injection at runtime</li>
+                            <li>⚡ Smart caching for hashed assets (immutable)</li>
+                            <li>🔄 Client-side routing support</li>
+                            <li>📦 Works with embedded filesystems</li>
+                        </ul>
+                    `;
+                    document.getElementById('about-link').style.background = 'rgba(255,255,255,0.3)';
+                    break;
+
+                case '/features':
+                    content.innerHTML = `
+                        <h3>Features</h3>
+                        <p style="margin-top: 1rem;">The react package integrates seamlessly with Wayframe's server package.</p>
+                        <p style="margin-top: 0.5rem;">Environment variables are injected into <code>window.__REACT_ENV__</code>:</p>
+                        <pre style="margin-top: 0.5rem; text-align: left; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 4px; overflow-x: auto;">
+{
+  "REACT_APP_API_URL": "${env.REACT_APP_API_URL || 'http://localhost:8080'}",
+  "REACT_APP_VERSION": "${env.REACT_APP_VERSION || '1.0.0'}",
+  "REACT_APP_ENV": "${env.REACT_APP_ENV || 'production'}"
+}</pre>
+                    `;
+                    document.getElementById('features-link').style.background = 'rgba(255,255,255,0.3)';
+                    break;
+
+                default:
+                    content.innerHTML = `
+                        <h3>Page Not Found</h3>
+                        <p style="margin-top: 1rem;">This route (${path}) isn't handled by our router.</p>
+                        <p style="margin-top: 0.5rem;">But thanks to SPA routing, you still see this page!</p>
+                    `;
+            }
+        }
+
+        // Handle navigation
+        document.querySelectorAll('.nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                window.history.pushState({}, '', href);
+                updateContent();
+            });
+        });
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', updateContent);
+
+        // Initial content update
+        updateContent();
+    </script>
+</body>
+</html>
+

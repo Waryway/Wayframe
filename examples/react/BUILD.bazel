@@ -1,0 +1,50 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@aspect_rules_webpack//webpack:defs.bzl", "webpack_bundle")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+# JS sources
+js_library(
+    name = "react_srcs",
+    srcs = glob([
+        "src/**/*.js",
+        "src/**/*.css",
+    ]),
+    deps = [
+        "@pnpm_react//react",
+        "@pnpm_react//react-dom",
+    ],
+)
+
+# Build the React app with webpack
+webpack_bundle(
+    name = "react_build",
+    data = [
+        "public/favicon.ico",
+        "public/index.html",
+        "webpack.config.js",
+        ":react_srcs",
+    ],
+    entry_point = "src/index.js",
+    node_modules = "@pnpm_react//:node_modules",
+    output_dir = True,
+    webpack_config = "webpack.config.js",
+)
+
+go_library(
+    name = "react_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/Waryway/Wayframe/examples/react",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//examples/react/env",
+        "//pkg/react",
+        "//pkg/server",
+    ],
+)
+
+go_binary(
+    name = "react",
+    data = [":react_build"],
+    embed = [":react_lib"],
+    visibility = ["//visibility:public"],
+)

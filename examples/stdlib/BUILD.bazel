@@ -6,9 +6,10 @@ go_library(
     importpath = "github.com/Waryway/Wayframe/examples/stdlib",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/env",
-        "//internal/web",
-        "//internal/web/stdlib",
+        "//pkg/config",
+        "//pkg/logger",
+        "//pkg/server",
+        "//pkg/server/stdlib",
     ],
 )
 

@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cli",
+    srcs = glob([
+        "cli.go",
+        "cobra.go",
+        "kong.go",
+    ]),
+    importpath = "github.com/Waryway/Wayframe/pkg/cli",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_alecthomas_kong//:kong",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)

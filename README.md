@@ -63,9 +63,44 @@ srv.HandleFunc("/", handler)
 srv.Start(30 * time.Second)
 ```
 
+### react
+
+Serve React applications from Go servers with SPA routing, environment variable injection, and smart caching.
+
+```go
+import "github.com/Waryway/Wayframe/pkg/react"
+
+reactHandler, err := react.NewHandler(react.Config{
+    BuildDir: "./build",
+    BasePath: "/",
+    EnvVars: map[string]string{
+        "REACT_APP_API_URL": "http://localhost:8080/api",
+        "REACT_APP_VERSION": "1.0.0",
+    },
+})
+
+srv := server.New(server.Config{Addr: ":8080"})
+srv.Handle("/", reactHandler)
+srv.Start(30 * time.Second)
+```
+
+**Features**:
+- Static asset serving with proper cache headers
+- SPA fallback routing (all non-asset routes serve index.html)
+- Runtime environment variable injection into React builds
+- Content-hash based cache optimization
+- Compatible with embedded filesystems
+- **Build React apps with npm or Bazel**
+- Bootstrap new React apps (CRA, Vite, Next.js)
+- Bazel build file generation and management
+
 ## Example
 
 See [examples/basic](examples/basic/main.go) for a complete example demonstrating all packages working together.
+
+See [examples/react](examples/react/README.md) for a React SPA serving example with environment variable injection and API routes.
+
+See [docs/REACT_BAZEL_GUIDE.md](docs/REACT_BAZEL_GUIDE.md) for building React applications with Bazel.
 
 ## Building with Go
 

@@ -1,0 +1,10 @@
+{
+  "short_name": "Wayframe React",
+  "name": "Wayframe React Example",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#ffffff"
+}
+

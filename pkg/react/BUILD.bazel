@@ -1,0 +1,23 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "react",
+    srcs = [
+        "bazel.go",
+        "bootstrap.go",
+        "doc.go",
+        "react.go",
+    ],
+    importpath = "github.com/Waryway/Wayframe/pkg/react",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "react_test",
+    srcs = [
+        "bazel_test.go",
+        "bootstrap_test.go",
+        "react_test.go",
+    ],
+    embed = [":react"],
+)

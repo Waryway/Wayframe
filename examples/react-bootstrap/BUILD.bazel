@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "react-bootstrap_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/Waryway/Wayframe/examples/react-bootstrap",
+    visibility = ["//visibility:private"],
+    deps = ["//pkg/react"],
+)
+
+go_binary(
+    name = "react-bootstrap",
+    embed = [":react-bootstrap_lib"],
+    visibility = ["//visibility:public"],
+)
