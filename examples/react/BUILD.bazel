@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "react_lib",
+    srcs = ["main.go"],
+    embedsrcs = glob([
+        "dist/*",
+        "dist/**/*",
+        "migrations/*.sql",
+    ]),
+    importpath = "github.com/Waryway/Wayframe/examples/react",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/web",
+        "//internal/web/stdlib",
+        "//pkg/database",
+    ],
+)
+
+go_binary(
+    name = "react",
+    embed = [":react_lib"],
+    visibility = ["//visibility:public"],
+)
