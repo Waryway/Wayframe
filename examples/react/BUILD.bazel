@@ -1,11 +1,33 @@
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
+# Build script to build frontend before Go binary
+genrule(
+    name = "build_frontend_script",
+    outs = ["build_frontend.sh"],
+    cmd = """
+cat > $@ << 'EOF'
+#!/bin/bash
+set -e
+cd examples/react/frontend
+echo "Building React frontend..."
+npm install --silent
+npm run build
+echo "Frontend built successfully to examples/react/dist/"
+EOF
+chmod +x $@
+    """,
+    executable = True,
+    visibility = ["//visibility:public"],
+)
+
 go_library(
     name = "react_lib",
     srcs = ["main.go"],
-    embedsrcs = glob([
-        "dist/*",
-        "dist/**/*",
+    # Frontend is built by //examples/react/frontend:build_react
+    # It monitors src/ for changes and rebuilds when needed
+    embedsrcs = [
+        "//examples/react/frontend:dist",
+    ] + glob([
         "migrations/*.sql",
     ]),
     importpath = "github.com/Waryway/Wayframe/examples/react",
