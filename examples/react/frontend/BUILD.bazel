@@ -23,13 +23,13 @@ react_app(
     package_json = "package.json",
     build_script = "build",
     output_dir = "../dist",
-    visibility = ["//examples/react:__pkg__"],
+    visibility = ["//visibility:public"],
 )
 
 # Alias for easier access - the react_app macro creates this
 alias(
     name = "dist",
     actual = ":build_react_dist",
-    visibility = ["//examples/react:__pkg__"],
+    visibility = ["//visibility:public"],
 )
 
