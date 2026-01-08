@@ -53,6 +53,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-cache-${{ runner.os }}-${{ hashFiles('examples/react/frontend/package-lock.json') }}
+          restore-keys: |
+            npm-cache-${{ runner.os }}-
+
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@0.15.0
         with:
@@ -93,6 +106,11 @@ jobs:
 
       - name: Ensure workspace_status.sh is executable
         run: chmod +x tools/workspace_status.sh
+
+      - name: Build frontend
+        run: |
+          echo "Building frontend assets (fast-fail if npm/node is missing)"
+          bazel build //examples/react/frontend:dist
 
       - name: Build all targets
         run: bazel build //...
@@ -196,4 +214,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: 'trivy-results.sarif'
-
