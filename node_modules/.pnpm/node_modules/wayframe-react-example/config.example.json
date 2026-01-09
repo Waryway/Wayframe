@@ -1,0 +1,13 @@
+{
+  "server": {
+    "addr": ":8080"
+  },
+  "database": {
+    "driver": "sqlite",
+    "dsn": "./wayframe.db"
+  },
+  "cors": {
+    "origins": "*"
+  }
+}
+
