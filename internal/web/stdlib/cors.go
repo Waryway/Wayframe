@@ -63,21 +63,26 @@ func CORS(config CORSConfig) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 
+			// If there's no Origin header, this is not a CORS request.
+			// Skip CORS headers entirely.
+			if origin == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			// Check if origin is allowed
-			if origin != "" {
-				if config.AllowOrigins[0] == "*" {
-					w.Header().Set("Access-Control-Allow-Origin", "*")
-				} else {
-					for _, allowedOrigin := range config.AllowOrigins {
-						if allowedOrigin == origin {
-							w.Header().Set("Access-Control-Allow-Origin", origin)
-							break
-						}
+			if config.AllowOrigins[0] == "*" {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			} else {
+				for _, allowedOrigin := range config.AllowOrigins {
+					if allowedOrigin == origin {
+						w.Header().Set("Access-Control-Allow-Origin", origin)
+						break
 					}
 				}
 			}
 
-			// Set CORS headers
+			// Set CORS headers for CORS requests only
 			w.Header().Set("Access-Control-Allow-Methods", allowMethods)
 			w.Header().Set("Access-Control-Allow-Headers", allowHeaders)
 
