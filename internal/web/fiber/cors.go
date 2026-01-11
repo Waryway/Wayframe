@@ -53,7 +53,7 @@ func CORS(config CORSConfig) fiber.Handler {
 
 		// Check if origin is allowed
 		if origin != "" {
-			if config.AllowOrigins[0] == "*" {
+			if len(config.AllowOrigins) > 0 && config.AllowOrigins[0] == "*" {
 				c.Set("Access-Control-Allow-Origin", "*")
 			} else {
 				for _, allowedOrigin := range config.AllowOrigins {
