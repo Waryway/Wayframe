@@ -33,10 +33,10 @@ genrule(
     outs = [
         "zz_embedded_dist.go",
     ],
-    # Use the embedgen tool built by rules_go so the genstep is hermetic
-    tools = ["//tools/embedgen"],
     cmd = "$(location //tools/embedgen:embedgen) $@ $(SRCS)",
     local = 1,
+    # Use the embedgen tool built by rules_go so the genstep is hermetic
+    tools = ["//tools/embedgen"],
     visibility = ["//visibility:private"],
 )
 
