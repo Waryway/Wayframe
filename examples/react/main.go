@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -21,11 +20,14 @@ import (
 	"github.com/Waryway/Wayframe/pkg/database"
 )
 
-//go:embed dist/*
-var staticFiles embed.FS
+// Note: `staticFiles` is generated at build time by the
+// `generate_embedded_dist` genrule (zz_embedded_dist.go) and provides
+// an fs.FS-like value containing the frontend assets.
+// The genrule produces a variable named `staticFiles` (type memFS) so
+// we don't use go:embed here.
 
-//go:embed migrations/*.sql
-var migrationFiles embed.FS
+// Migrations are read from disk at runtime so they don't need to be
+// listed in go_library srcs for compilation.
 
 // Item represents an item in the database
 type Item struct {
@@ -150,15 +152,28 @@ func main() {
 	server.HandleFunc("PUT /api/items/{id}", app.handleUpdateItem)
 	server.HandleFunc("DELETE /api/items/{id}", app.handleDeleteItem)
 
-	// Serve static files
-	distFS, err := fs.Sub(staticFiles, "dist")
-	if err != nil {
-		logger.Error("Failed to create sub filesystem", "error", err)
-		os.Exit(1)
+	// Serve static files. We resolve the asset FS dynamically per-request
+	// so that a developer can rebuild the frontend into the `examples/react/dist`
+	// directory and the running Go server will start serving the new files
+	// without needing a restart. The resolver prefers WAYFRAME_ASSETS_DIR,
+	// then project-local examples/react/dist, then falls back to the embedded
+	// `staticFiles` generated at build time.
+	resolveDistFS := func() (fs.FS, error) {
+		assetsDir := os.Getenv("WAYFRAME_ASSETS_DIR")
+		if assetsDir != "" {
+			if _, err := os.Stat(assetsDir); err == nil {
+				return os.DirFS(assetsDir), nil
+			}
+		}
+		if _, err := os.Stat("examples/react/dist"); err == nil {
+			return os.DirFS("examples/react/dist"), nil
+		}
+		// Fall back to embedded files
+		return fs.Sub(staticFiles, "dist")
 	}
 
-	fileServer := http.FileServer(http.FS(distFS))
-	server.Handle("/", spaHandler(distFS, fileServer))
+	// Use a handler that resolves the FS on each request.
+	server.Handle("/", spaHandler(func() (fs.FS, error) { return resolveDistFS() }))
 
 	logger.Info("Starting server", "addr", serverAddr)
 
@@ -189,7 +204,7 @@ func runMigrations(db *database.DB) error {
 
 // mustReadMigration reads a migration file or panics
 func mustReadMigration(path string) string {
-	data, err := migrationFiles.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read migration %s: %v", path, err))
 	}
@@ -197,7 +212,7 @@ func mustReadMigration(path string) string {
 }
 
 // spaHandler handles SPA routing by serving index.html for non-API routes
-func spaHandler(distFS fs.FS, fileServer http.Handler) http.Handler {
+func spaHandler(resolveFS func() (fs.FS, error)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Don't serve index.html for API routes
 		if strings.HasPrefix(r.URL.Path, "/api/") {
@@ -211,15 +226,22 @@ func spaHandler(distFS fs.FS, fileServer http.Handler) http.Handler {
 			path = "index.html"
 		}
 
+		// Resolve the filesystem for the request
+		distFS, err := resolveFS()
+		if err != nil {
+			http.Error(w, "Failed to resolve filesystem", http.StatusInternalServerError)
+			return
+		}
+
 		// Check if file exists
 		if _, err := fs.Stat(distFS, path); err == nil {
-			fileServer.ServeHTTP(w, r)
+			http.FileServer(http.FS(distFS)).ServeHTTP(w, r)
 			return
 		}
 
 		// Serve index.html for client-side routing
 		r.URL.Path = "/"
-		fileServer.ServeHTTP(w, r)
+		http.FileServer(http.FS(distFS)).ServeHTTP(w, r)
 	})
 }
 
