@@ -1,9 +1,15 @@
-load("@rules_go//go:def.bzl", "go_binary")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_binary(
     name = "embedgen",
-    srcs = ["main.go"],
+    embed = [":embedgen_lib"],
     importpath = "github.com/Waryway/Wayframe/tools/embedgen",
     visibility = ["//visibility:public"],
 )
 
+go_library(
+    name = "embedgen_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/Waryway/Wayframe/tools/embedgen",
+    visibility = ["//visibility:private"],
+)

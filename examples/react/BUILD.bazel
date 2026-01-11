@@ -34,7 +34,7 @@ genrule(
         "zz_embedded_dist.go",
     ],
     # Use the embedgen tool built by rules_go so the genstep is hermetic
-    tools = ["//tools/embedgen:embedgen"],
+    tools = ["//tools/embedgen"],
     cmd = "$(location //tools/embedgen:embedgen) $@ $(SRCS)",
     local = 1,
     visibility = ["//visibility:private"],
@@ -44,8 +44,7 @@ go_library(
     name = "react_lib",
     srcs = [
         "main.go",
-        # Generated Go source that embeds the dist outputs
-        ":generate_embedded_dist",
+        "zz_embedded_dist.go",
     ],
     data = glob(["migrations/*.sql"]),
     importpath = "github.com/Waryway/Wayframe/examples/react",
