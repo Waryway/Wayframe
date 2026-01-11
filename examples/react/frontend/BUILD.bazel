@@ -20,9 +20,9 @@ react_app(
         "tsconfig.json",
         "webpack.config.js",
     ],
-    package_json = "package.json",
     build_script = "build",
     output_dir = "../dist",
+    package_json = "package.json",
     visibility = ["//visibility:public"],
 )
 
@@ -32,4 +32,3 @@ alias(
     actual = ":build_react_dist",
     visibility = ["//visibility:public"],
 )
-
