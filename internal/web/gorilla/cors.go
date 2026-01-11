@@ -53,7 +53,7 @@ func CORS(config CORSConfig) func(http.Handler) http.Handler {
 
 			// Check if origin is allowed
 			if origin != "" {
-				if config.AllowOrigins[0] == "*" {
+				if len(config.AllowOrigins) > 0 && config.AllowOrigins[0] == "*" {
 					w.Header().Set("Access-Control-Allow-Origin", "*")
 				} else {
 					for _, allowedOrigin := range config.AllowOrigins {
