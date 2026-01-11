@@ -1,0 +1,63 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+# Build script to build frontend before Go binary
+# (kept as a convenience script; the react_app macro in bazel/react.bzl
+# already produces a filegroup //examples/react/frontend:dist that the
+# generate_embedded_dist genrule depends on.)
+genrule(
+    name = "build_frontend_script",
+    outs = ["build_frontend.sh"],
+    cmd = """
+cat > $@ << 'EOF'
+#!/bin/bash
+set -e
+cd examples/react/frontend
+echo "Building React frontend..."
+npm install --silent
+npm run build
+echo "Frontend built successfully to examples/react/dist/"
+EOF
+chmod +x $@
+    """,
+    executable = True,
+    visibility = ["//visibility:public"],
+)
+
+# Generate package-local copies of the frontend dist files and a generated
+# Go source file that embeds them using a cross-platform tool so the Go
+# compiler sees the assets at compile time. This avoids depending on bash/node
+# during genrule execution and works on Windows/CI.
+genrule(
+    name = "generate_embedded_dist",
+    srcs = ["//examples/react/frontend:dist"],
+    outs = [
+        "zz_embedded_dist.go",
+    ],
+    cmd = "$(location //tools/embedgen:embedgen) $@ $(SRCS)",
+    local = 1,
+    # Use the embedgen tool built by rules_go so the genstep is hermetic
+    tools = ["//tools/embedgen"],
+    visibility = ["//visibility:private"],
+)
+
+go_library(
+    name = "react_lib",
+    srcs = [
+        "main.go",
+        "zz_embedded_dist.go",
+    ],
+    data = glob(["migrations/*.sql"]),
+    importpath = "github.com/Waryway/Wayframe/examples/react",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/web",
+        "//internal/web/stdlib",
+        "//pkg/database",
+    ],
+)
+
+go_binary(
+    name = "react",
+    embed = [":react_lib"],
+    visibility = ["//visibility:public"],
+)

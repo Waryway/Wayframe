@@ -1,0 +1,34 @@
+# React Frontend Build
+#
+# Uses the custom react_app rule from //bazel:react.bzl
+# This automatically builds the frontend when source files change.
+#
+# For Development (Hot Reload):
+#   npm run dev  (in this directory)
+
+load("//bazel:react.bzl", "react_app")
+
+react_app(
+    name = "build_react",
+    srcs = glob([
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.css",
+        "public/**/*",
+    ]) + [
+        "package-lock.json",
+        "tsconfig.json",
+        "webpack.config.js",
+    ],
+    build_script = "build",
+    output_dir = "../dist",
+    package_json = "package.json",
+    visibility = ["//visibility:public"],
+)
+
+# Alias for easier access - the react_app macro creates this
+alias(
+    name = "dist",
+    actual = ":build_react_dist",
+    visibility = ["//visibility:public"],
+)

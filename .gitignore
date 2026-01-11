@@ -44,3 +44,4 @@ bazel-*
 /bazel-wayframe/
 /.idea/
 basic
+/examples/react/frontend/node_modules/
